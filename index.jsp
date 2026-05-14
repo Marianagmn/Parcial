@@ -1,3 +1,4 @@
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agenda de Contactos - Inicio</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Google Fonts for modern typography -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body class="home-body">
@@ -14,12 +14,11 @@
             <span class="icon">📖</span> ConfigContacts
         </div>
         <nav class="main-nav">
-            <!-- Requirement: 5 options, with descriptions on hover (title) -->
-            <a href="index.html" title="Regresar a la página principal del sitio">Inicio</a>
-            <a href="login.html?action=add" title="Dirígete a crear nuevos contactos en el sistema">Añadir Contacto</a>
-            <a href="login.html?action=search" title="Encuentra un contacto ya registrado fácilmente">Buscar Contacto</a>
-            <a href="login.html?action=groups" title="Organiza tus contactos por familia, amigos o trabajo">Ver Grupos</a>
-            <a href="login.html" title="Inicia sesión o regístrate en la plataforma" class="btn-primary-outline">Acceder</a>
+            <a href="index.jsp" title="Regresar a la página principal del sitio">Inicio</a>
+            <a href="login.jsp?action=add" title="Dirígete a crear nuevos contactos en el sistema">Añadir Contacto</a>
+            <a href="login.jsp?action=search" title="Encuentra un contacto ya registrado fácilmente">Buscar Contacto</a>
+            <a href="login.jsp?action=groups" title="Organiza tus contactos por familia, amigos o trabajo">Ver Grupos</a>
+            <a href="login.jsp" title="Inicia sesión o regístrate en la plataforma" class="btn-primary-outline">Acceder</a>
         </nav>
     </header>
 
@@ -31,12 +30,11 @@
                 personales, números de teléfono y correos fácilmente desde cualquier lugar.
             </p>
             <div class="hero-actions">
-                <a href="login.html" class="btn-primary" title="Inicia tu sesión para administrar tu agenda">Ingresar a la Agenda</a>
-                <a href="login.html?register=true" class="btn-secondary" title="Crea una cuenta gratuita">Registrarse</a>
+                <a href="login.jsp" class="btn-primary" title="Inicia tu sesión para administrar tu agenda">Ingresar a la Agenda</a>
+                <a href="login.jsp?register=true" class="btn-secondary" title="Crea una cuenta gratuita">Registrarse</a>
             </div>
         </div>
         <div class="hero-image">
-            <!-- Placeholder for representative image. Using a modern stylized illustration replacement using CSS or a public placeholder -->
             <img src="https://images.unsplash.com/photo-1512428559087-560fa5ceab42?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Personas conectándose, representación de agenda de contactos" class="rounded-image shadow-lg">
         </div>
     </main>
