@@ -277,6 +277,9 @@
             <a href="contactos?action=editar" class="nav-item" title="Añadir un nuevo contacto a la agenda">➕ Añadir Contacto</a>
             <a href="contactos?action=buscar" class="nav-item" title="Buscar contactos por nombre o grupo">🔍 Buscar</a>
             <a href="usuarios" class="nav-item active" title="Gestionar usuarios del sistema">👥 Gestionar Usuarios</a>
+            <% if (esSuperAdmin) { %>
+            <a href="roles" class="nav-item" title="Gestionar roles y permisos del sistema">🔐 Gestionar Roles</a>
+            <% } %>
         </nav>
         <div class="sidebar-footer">
             <a href="logout" class="btn-logout" title="Cerrar la sesión actual de forma segura">
