@@ -6,7 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Implementación de UserDAO para operaciones de base de datos
+ * Implementación de UserDAO para operaciones de base de datos.
+ * Usa try-with-resources para garantizar cierre correcto de conexiones.
  */
 public class UserDAOImpl implements UserDAO {
     
@@ -23,21 +24,21 @@ public class UserDAOImpl implements UserDAO {
             stmt.setString(1, username);
             stmt.setString(2, password);
             
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Usuario usuario = mapearUsuario(rs);
-                // Cargar el rol
-                if (rs.getString("rol_nombre") != null) {
-                    Rol rol = new Rol();
-                    rol.setId(rs.getInt("rol_id"));
-                    rol.setNombre(rs.getString("rol_nombre"));
-                    rol.setDescripcion(rs.getString("rol_descripcion"));
-                    usuario.setRol(rol);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Usuario usuario = mapearUsuario(rs);
+                    if (rs.getString("rol_nombre") != null) {
+                        Rol rol = new Rol();
+                        rol.setId(rs.getInt("rol_id"));
+                        rol.setNombre(rs.getString("rol_nombre"));
+                        rol.setDescripcion(rs.getString("rol_descripcion"));
+                        usuario.setRol(rol);
+                    }
+                    return usuario;
                 }
-                return usuario;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[UserDAOImpl] Error al autenticar: " + e.getMessage());
         }
         return null;
     }
@@ -54,20 +55,21 @@ public class UserDAOImpl implements UserDAO {
             
             stmt.setInt(1, id);
             
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Usuario usuario = mapearUsuario(rs);
-                if (rs.getString("rol_nombre") != null) {
-                    Rol rol = new Rol();
-                    rol.setId(rs.getInt("rol_id"));
-                    rol.setNombre(rs.getString("rol_nombre"));
-                    rol.setDescripcion(rs.getString("rol_descripcion"));
-                    usuario.setRol(rol);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Usuario usuario = mapearUsuario(rs);
+                    if (rs.getString("rol_nombre") != null) {
+                        Rol rol = new Rol();
+                        rol.setId(rs.getInt("rol_id"));
+                        rol.setNombre(rs.getString("rol_nombre"));
+                        rol.setDescripcion(rs.getString("rol_descripcion"));
+                        usuario.setRol(rol);
+                    }
+                    return usuario;
                 }
-                return usuario;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[UserDAOImpl] Error al obtener usuario por ID: " + e.getMessage());
         }
         return null;
     }
@@ -84,20 +86,21 @@ public class UserDAOImpl implements UserDAO {
             
             stmt.setString(1, username);
             
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Usuario usuario = mapearUsuario(rs);
-                if (rs.getString("rol_nombre") != null) {
-                    Rol rol = new Rol();
-                    rol.setId(rs.getInt("rol_id"));
-                    rol.setNombre(rs.getString("rol_nombre"));
-                    rol.setDescripcion(rs.getString("rol_descripcion"));
-                    usuario.setRol(rol);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Usuario usuario = mapearUsuario(rs);
+                    if (rs.getString("rol_nombre") != null) {
+                        Rol rol = new Rol();
+                        rol.setId(rs.getInt("rol_id"));
+                        rol.setNombre(rs.getString("rol_nombre"));
+                        rol.setDescripcion(rs.getString("rol_descripcion"));
+                        usuario.setRol(rol);
+                    }
+                    return usuario;
                 }
-                return usuario;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[UserDAOImpl] Error al obtener usuario por username: " + e.getMessage());
         }
         return null;
     }
@@ -111,8 +114,8 @@ public class UserDAOImpl implements UserDAO {
                      "ORDER BY u.fecha_creacion DESC";
         
         try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
                 Usuario usuario = mapearUsuario(rs);
@@ -125,8 +128,9 @@ public class UserDAOImpl implements UserDAO {
                 }
                 usuarios.add(usuario);
             }
+            System.out.println("[UserDAOImpl] Listado obtenido. Total: " + usuarios.size());
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[UserDAOImpl] Error al listar usuarios: " + e.getMessage());
         }
         return usuarios;
     }
@@ -147,14 +151,16 @@ public class UserDAOImpl implements UserDAO {
             int filasAfectadas = stmt.executeUpdate();
             
             if (filasAfectadas > 0) {
-                ResultSet rs = stmt.getGeneratedKeys();
-                if (rs.next()) {
-                    usuario.setId(rs.getInt(1));
+                try (ResultSet rs = stmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        usuario.setId(rs.getInt(1));
+                    }
                 }
+                System.out.println("[UserDAOImpl] Usuario creado exitosamente: " + usuario.getUsername());
                 return true;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[UserDAOImpl] Error al crear usuario: " + e.getMessage());
         }
         return false;
     }
@@ -174,9 +180,11 @@ public class UserDAOImpl implements UserDAO {
             stmt.setBoolean(6, usuario.isActivo());
             stmt.setInt(7, usuario.getId());
             
-            return stmt.executeUpdate() > 0;
+            int filasAfectadas = stmt.executeUpdate();
+            System.out.println("[UserDAOImpl] Usuario actualizado exitosamente.");
+            return filasAfectadas > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[UserDAOImpl] Error al actualizar usuario: " + e.getMessage());
         }
         return false;
     }
@@ -189,9 +197,11 @@ public class UserDAOImpl implements UserDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, id);
-            return stmt.executeUpdate() > 0;
+            int filasAfectadas = stmt.executeUpdate();
+            System.out.println("[UserDAOImpl] Usuario eliminado exitosamente.");
+            return filasAfectadas > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[UserDAOImpl] Error al eliminar usuario: " + e.getMessage());
         }
         return false;
     }
@@ -204,13 +214,13 @@ public class UserDAOImpl implements UserDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setString(1, username);
-            ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt(1) > 0;
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[UserDAOImpl] Error al verificar username: " + e.getMessage());
         }
         return false;
     }
@@ -225,9 +235,11 @@ public class UserDAOImpl implements UserDAO {
             stmt.setInt(1, rolId);
             stmt.setInt(2, usuarioId);
             
-            return stmt.executeUpdate() > 0;
+            int filasAfectadas = stmt.executeUpdate();
+            System.out.println("[UserDAOImpl] Rol asignado exitosamente.");
+            return filasAfectadas > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[UserDAOImpl] Error al asignar rol: " + e.getMessage());
         }
         return false;
     }

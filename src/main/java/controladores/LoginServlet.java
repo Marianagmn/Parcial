@@ -2,6 +2,7 @@ package controladores;
 
 import modelo.Usuario;
 import modelo.UserDAOImpl;
+import modelo.DatabaseConnection;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -9,9 +10,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 
 /**
- * Servlet para manejar el login y registro de usuarios
+ * Servlet para manejar el login y registro de usuarios.
+ * URL: /login
  */
 @WebServlet("/login")
 public class LoginServlet extends HttpServlet {
@@ -30,7 +34,7 @@ public class LoginServlet extends HttpServlet {
         // Verificar si ya hay una sesión activa
         HttpSession session = request.getSession(false);
         if (session != null && session.getAttribute("usuario") != null) {
-            response.sendRedirect("dashboard.jsp");
+            response.sendRedirect("contactos");
             return;
         }
         
@@ -60,10 +64,24 @@ public class LoginServlet extends HttpServlet {
         String username = request.getParameter("username");
         String password = request.getParameter("password");
         
-        Usuario usuario = userDAO.autenticar(username, password);
+        // Validación básica
+        if (username == null || password == null 
+                || username.trim().isEmpty() || password.trim().isEmpty()) {
+            request.setAttribute("error", "Por favor completa todos los campos.");
+            request.getRequestDispatcher("login.jsp").forward(request, response);
+            return;
+        }
+        
+        Usuario usuario = userDAO.autenticar(username.trim(), password.trim());
         
         if (usuario != null) {
-            HttpSession session = request.getSession();
+            // Invalidar sesión anterior para evitar fijación de sesión
+            HttpSession sesionVieja = request.getSession(false);
+            if (sesionVieja != null) {
+                sesionVieja.invalidate();
+            }
+            
+            HttpSession session = request.getSession(true);
             session.setAttribute("usuario", usuario);
             session.setAttribute("usuarioId", usuario.getId());
             session.setAttribute("usuarioNombre", usuario.getNombre());
@@ -72,9 +90,9 @@ public class LoginServlet extends HttpServlet {
             // Registrar actividad de login
             registrarActividad(usuario.getId(), "LOGIN", "Usuario inició sesión");
             
-            response.sendRedirect("dashboard.jsp");
+            response.sendRedirect("contactos");
         } else {
-            request.setAttribute("error", "Credenciales incorrectas");
+            request.setAttribute("error", "Credenciales incorrectas. Verifica tu usuario y contraseña.");
             request.setAttribute("username", username);
             request.getRequestDispatcher("login.jsp").forward(request, response);
         }
@@ -88,8 +106,17 @@ public class LoginServlet extends HttpServlet {
         String password = request.getParameter("password");
         String email = request.getParameter("email");
         
+        // Validación básica
+        if (nombre == null || username == null || password == null
+                || nombre.trim().isEmpty() || username.trim().isEmpty() || password.trim().isEmpty()) {
+            request.setAttribute("error", "Por favor completa todos los campos obligatorios.");
+            request.setAttribute("modoRegistro", true);
+            request.getRequestDispatcher("login.jsp").forward(request, response);
+            return;
+        }
+        
         // Validar que el username no exista
-        if (userDAO.existeUsername(username)) {
+        if (userDAO.existeUsername(username.trim())) {
             request.setAttribute("error", "El nombre de usuario ya existe");
             request.setAttribute("nombre", nombre);
             request.setAttribute("username", username);
@@ -101,16 +128,22 @@ public class LoginServlet extends HttpServlet {
         
         // Crear nuevo usuario con rol USER por defecto
         Usuario nuevoUsuario = new Usuario();
-        nuevoUsuario.setNombre(nombre);
-        nuevoUsuario.setUsername(username);
+        nuevoUsuario.setNombre(nombre.trim());
+        nuevoUsuario.setUsername(username.trim());
         nuevoUsuario.setPassword(password);
-        nuevoUsuario.setEmail(email);
+        nuevoUsuario.setEmail(email != null ? email.trim() : "");
         nuevoUsuario.setRolId(2); // Rol USER por defecto
         nuevoUsuario.setActivo(true);
         
         if (userDAO.crear(nuevoUsuario)) {
+            // Invalidar sesión anterior
+            HttpSession sesionVieja = request.getSession(false);
+            if (sesionVieja != null) {
+                sesionVieja.invalidate();
+            }
+            
             // Auto-login después del registro
-            HttpSession session = request.getSession();
+            HttpSession session = request.getSession(true);
             session.setAttribute("usuario", nuevoUsuario);
             session.setAttribute("usuarioId", nuevoUsuario.getId());
             session.setAttribute("usuarioNombre", nuevoUsuario.getNombre());
@@ -119,9 +152,9 @@ public class LoginServlet extends HttpServlet {
             // Registrar actividad de registro
             registrarActividad(nuevoUsuario.getId(), "REGISTRO", "Usuario se registró en el sistema");
             
-            response.sendRedirect("dashboard.jsp");
+            response.sendRedirect("contactos");
         } else {
-            request.setAttribute("error", "Error al crear el usuario");
+            request.setAttribute("error", "Error al crear el usuario. Intenta de nuevo.");
             request.setAttribute("nombre", nombre);
             request.setAttribute("username", username);
             request.setAttribute("email", email);
@@ -131,18 +164,15 @@ public class LoginServlet extends HttpServlet {
     }
     
     private void registrarActividad(int usuarioId, String accion, String descripcion) {
-        try {
-            java.sql.Connection conn = modelo.DatabaseConnection.getConnection();
-            String sql = "INSERT INTO actividades (usuario_id, accion, descripcion) VALUES (?, ?, ?)";
-            java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
+        String sql = "INSERT INTO actividades (usuario_id, accion, descripcion) VALUES (?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, usuarioId);
             stmt.setString(2, accion);
             stmt.setString(3, descripcion);
             stmt.executeUpdate();
-            stmt.close();
-            conn.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[LoginServlet] Error al registrar actividad: " + e.getMessage());
         }
     }
 }

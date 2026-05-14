@@ -6,7 +6,13 @@
          version="6.0">
 
     <display-name>Agenda de Contactos</display-name>
-    <description>Aplicación web para gestión de contactos con JSP</description>
+    <description>Aplicación web para gestión de contactos con JSP y Servlets</description>
+
+    <!--
+        NOTA: Los servlets están registrados con @WebServlet en sus clases Java.
+        NO se declaran aquí para evitar el conflicto de doble registro que
+        causaba el error 500 en la versión original.
+    -->
 
     <!-- Welcome file list -->
     <welcome-file-list>
@@ -58,18 +64,7 @@
         <url-pattern>/dashboard.jsp</url-pattern>
         <url-pattern>/contactos</url-pattern>
         <url-pattern>/usuarios</url-pattern>
+        <url-pattern>/usuarios.jsp</url-pattern>
     </filter-mapping>
-
-    <!-- Servlet mappings (if not using @WebServlet annotations) -->
-    <!-- 
-    <servlet>
-        <servlet-name>LoginServlet</servlet-name>
-        <servlet-class>controladores.LoginServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>LoginServlet</servlet-name>
-        <url-pattern>/login</url-pattern>
-    </servlet-mapping>
-    -->
 
 </web-app>

@@ -6,7 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Implementación de ContactDAO para operaciones de base de datos
+ * Implementación de ContactDAO para operaciones de base de datos.
+ * Usa try-with-resources para garantizar cierre correcto de conexiones.
  */
 public class ContactDAOImpl implements ContactDAO {
     
@@ -19,12 +20,13 @@ public class ContactDAOImpl implements ContactDAO {
             
             stmt.setInt(1, id);
             
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                return mapearContacto(rs);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return mapearContacto(rs);
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[ContactDAOImpl] Error al obtener contacto por ID: " + e.getMessage());
         }
         return null;
     }
@@ -39,12 +41,14 @@ public class ContactDAOImpl implements ContactDAO {
             
             stmt.setInt(1, usuarioId);
             
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                contactos.add(mapearContacto(rs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    contactos.add(mapearContacto(rs));
+                }
             }
+            System.out.println("[ContactDAOImpl] Contactos obtenidos. Total: " + contactos.size());
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[ContactDAOImpl] Error al listar contactos: " + e.getMessage());
         }
         return contactos;
     }
@@ -66,12 +70,14 @@ public class ContactDAOImpl implements ContactDAO {
             stmt.setString(4, terminoBusqueda);
             stmt.setString(5, terminoBusqueda);
             
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                contactos.add(mapearContacto(rs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    contactos.add(mapearContacto(rs));
+                }
             }
+            System.out.println("[ContactDAOImpl] Búsqueda completada. Resultados: " + contactos.size());
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[ContactDAOImpl] Error al buscar contactos: " + e.getMessage());
         }
         return contactos;
     }
@@ -87,12 +93,13 @@ public class ContactDAOImpl implements ContactDAO {
             stmt.setInt(1, usuarioId);
             stmt.setString(2, grupo);
             
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                contactos.add(mapearContacto(rs));
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    contactos.add(mapearContacto(rs));
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[ContactDAOImpl] Error al obtener contactos por grupo: " + e.getMessage());
         }
         return contactos;
     }
@@ -113,14 +120,16 @@ public class ContactDAOImpl implements ContactDAO {
             int filasAfectadas = stmt.executeUpdate();
             
             if (filasAfectadas > 0) {
-                ResultSet rs = stmt.getGeneratedKeys();
-                if (rs.next()) {
-                    contacto.setId(rs.getInt(1));
+                try (ResultSet rs = stmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        contacto.setId(rs.getInt(1));
+                    }
                 }
+                System.out.println("[ContactDAOImpl] Contacto creado exitosamente: " + contacto.getNombre());
                 return true;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[ContactDAOImpl] Error al crear contacto: " + e.getMessage());
         }
         return false;
     }
@@ -139,9 +148,11 @@ public class ContactDAOImpl implements ContactDAO {
             stmt.setInt(5, contacto.getId());
             stmt.setInt(6, contacto.getUsuarioId());
             
-            return stmt.executeUpdate() > 0;
+            int filasAfectadas = stmt.executeUpdate();
+            System.out.println("[ContactDAOImpl] Contacto actualizado exitosamente.");
+            return filasAfectadas > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[ContactDAOImpl] Error al actualizar contacto: " + e.getMessage());
         }
         return false;
     }
@@ -154,9 +165,11 @@ public class ContactDAOImpl implements ContactDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, id);
-            return stmt.executeUpdate() > 0;
+            int filasAfectadas = stmt.executeUpdate();
+            System.out.println("[ContactDAOImpl] Contacto eliminado exitosamente.");
+            return filasAfectadas > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[ContactDAOImpl] Error al eliminar contacto: " + e.getMessage());
         }
         return false;
     }
@@ -169,13 +182,13 @@ public class ContactDAOImpl implements ContactDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, usuarioId);
-            ResultSet rs = stmt.executeQuery();
-            
-            if (rs.next()) {
-                return rs.getInt(1);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("[ContactDAOImpl] Error al contar contactos: " + e.getMessage());
         }
         return 0;
     }

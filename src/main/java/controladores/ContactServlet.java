@@ -2,6 +2,7 @@ package controladores;
 
 import modelo.Contacto;
 import modelo.ContactDAOImpl;
+import modelo.DatabaseConnection;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -9,10 +10,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.List;
 
 /**
- * Servlet para manejar operaciones CRUD de contactos
+ * Servlet para manejar operaciones CRUD de contactos.
+ * URL: /contactos
  */
 @WebServlet("/contactos")
 public class ContactServlet extends HttpServlet {
@@ -42,7 +46,10 @@ public class ContactServlet extends HttpServlet {
             List<Contacto> contactos = contactDAO.buscar(usuarioId, termino);
             request.setAttribute("contactos", contactos);
             request.setAttribute("terminoBusqueda", termino);
+            // Activar vista de búsqueda
+            request.setAttribute("vistaActiva", "buscar");
             request.getRequestDispatcher("dashboard.jsp").forward(request, response);
+
         } else if ("editar".equals(action)) {
             String idStr = request.getParameter("id");
             if (idStr != null) {
@@ -52,7 +59,26 @@ public class ContactServlet extends HttpServlet {
                     request.setAttribute("modoEdicion", true);
                 }
             }
+            // Activar vista de formulario
+            request.setAttribute("vistaActiva", "editar");
             request.getRequestDispatcher("dashboard.jsp").forward(request, response);
+
+        } else if ("eliminar".equals(action)) {
+            // Eliminar contacto vía GET (enlace del dashboard)
+            String idStr = request.getParameter("id");
+            if (idStr != null) {
+                int id = Integer.parseInt(idStr);
+                Contacto contacto = contactDAO.obtenerPorId(id);
+                if (contacto != null && contacto.getUsuarioId() == usuarioId) {
+                    String nombreContacto = contacto.getNombre();
+                    if (contactDAO.eliminar(id)) {
+                        registrarActividad(usuarioId, "ELIMINAR_CONTACTO",
+                                "Eliminó contacto: " + nombreContacto);
+                    }
+                }
+            }
+            response.sendRedirect("contactos");
+
         } else {
             // Listar todos los contactos
             List<Contacto> contactos = contactDAO.obtenerPorUsuario(usuarioId);
@@ -78,8 +104,6 @@ public class ContactServlet extends HttpServlet {
             crearContacto(request, response, usuarioId);
         } else if ("actualizar".equals(action)) {
             actualizarContacto(request, response, usuarioId);
-        } else if ("eliminar".equals(action)) {
-            eliminarContacto(request, response, usuarioId);
         }
     }
     
@@ -135,41 +159,16 @@ public class ContactServlet extends HttpServlet {
         }
     }
     
-    private void eliminarContacto(HttpServletRequest request, HttpServletResponse response, int usuarioId) 
-            throws ServletException, IOException {
-        
-        String idStr = request.getParameter("id");
-        if (idStr == null) {
-            response.sendRedirect("contactos");
-            return;
-        }
-        
-        int id = Integer.parseInt(idStr);
-        Contacto contacto = contactDAO.obtenerPorId(id);
-        
-        if (contacto != null && contacto.getUsuarioId() == usuarioId) {
-            String nombreContacto = contacto.getNombre();
-            if (contactDAO.eliminar(id)) {
-                registrarActividad(usuarioId, "ELIMINAR_CONTACTO", "Eliminó contacto: " + nombreContacto);
-            }
-        }
-        
-        response.sendRedirect("contactos");
-    }
-    
     private void registrarActividad(int usuarioId, String accion, String descripcion) {
-        try {
-            java.sql.Connection conn = modelo.DatabaseConnection.getConnection();
-            String sql = "INSERT INTO actividades (usuario_id, accion, descripcion) VALUES (?, ?, ?)";
-            java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
+        String sql = "INSERT INTO actividades (usuario_id, accion, descripcion) VALUES (?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, usuarioId);
             stmt.setString(2, accion);
             stmt.setString(3, descripcion);
             stmt.executeUpdate();
-            stmt.close();
-            conn.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[ContactServlet] Error al registrar actividad: " + e.getMessage());
         }
     }
 }

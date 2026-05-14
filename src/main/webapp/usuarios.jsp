@@ -1,6 +1,22 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="modelo.Usuario" %>
+<%
+    // Verificar sesión activa y rol ADMIN
+    if (session.getAttribute("usuarioId") == null) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+    String usuarioRol = (String) session.getAttribute("usuarioRol");
+    if (!"ADMIN".equals(usuarioRol)) {
+        response.sendRedirect("contactos");
+        return;
+    }
+    
+    String usuarioNombre = (String) session.getAttribute("usuarioNombre");
+    Integer usuarioIdActual = (Integer) session.getAttribute("usuarioId");
+    String error = (String) request.getAttribute("error");
+%>
 <!DOCTYPE html>
 <html lang="es">
 
@@ -22,8 +38,8 @@
         </div>
         <nav class="sidebar-nav">
             <a href="contactos" class="nav-item" title="Ver todos tus contactos guardados">📋 Lista de Contactos</a>
-            <a href="dashboard.jsp#add" class="nav-item" title="Añadir un nuevo contacto a la agenda">➕ Añadir Contacto</a>
-            <a href="dashboard.jsp#search" class="nav-item" title="Buscar contactos por nombre o grupo">🔍 Buscar</a>
+            <a href="contactos?action=editar" class="nav-item" title="Añadir un nuevo contacto a la agenda">➕ Añadir Contacto</a>
+            <a href="contactos?action=buscar" class="nav-item" title="Buscar contactos por nombre o grupo">🔍 Buscar</a>
             <a href="usuarios" class="nav-item active" title="Gestionar usuarios del sistema">👥 Gestionar Usuarios</a>
         </nav>
         <div class="sidebar-footer">
@@ -38,19 +54,25 @@
         <header class="top-header shadow-sm">
             <button class="menu-toggle" id="menu-toggle" title="Abrir y cerrar el menú principal">☰ Menú</button>
             <div class="user-info">
-                <span>Hola, <strong id="user-display-name">${sessionScope.usuarioNombre}</strong></span>
-                <div class="avatar shadow-sm" title="Tu foto de perfil">${sessionScope.usuarioNombre != null ? sessionScope.usuarioNombre.charAt(0).toUpperCase() : 'U'}</div>
+                <span>Hola, <strong id="user-display-name"><%=usuarioNombre%></strong></span>
+                <div class="avatar shadow-sm" title="Tu foto de perfil"><%=usuarioNombre != null ? String.valueOf(usuarioNombre.charAt(0)).toUpperCase() : "U"%></div>
             </div>
         </header>
 
         <section class="content-area">
 
-            <!-- View: User List -->
+            <!-- View: User Management -->
             <div id="view-users" class="view-section active">
                 <div class="section-header">
                     <h2>Gestión de Usuarios</h2>
                     <p class="text-secondary">Administra los usuarios del sistema y sus roles.</p>
                 </div>
+
+                <% if (error != null && !error.isEmpty()) { %>
+                <div class="alert debug-alert" style="display:block; color: #dc2626; font-size: 0.875rem; margin-bottom: 1rem; padding: 0.75rem; background: #fef2f2; border-radius: 0.375rem;">
+                    <%=error%>
+                </div>
+                <% } %>
 
                 <div class="card shadow-md" style="margin-bottom: 2rem;">
                     <h3>Crear Nuevo Usuario</h3>
@@ -105,22 +127,26 @@
                             List<Usuario> usuarios = (List<Usuario>) request.getAttribute("usuarios");
                             if (usuarios != null && !usuarios.isEmpty()) {
                                 for (Usuario usuario : usuarios) {
+                                    String rolNombre = usuario.getRol() != null ? usuario.getRol().getNombre() : "Sin rol";
+                                    boolean esActivo = usuario.isActivo();
                             %>
                             <tr style="border-bottom: 1px solid #e5e7eb;">
-                                <td style="padding: 12px;">${usuario.getNombre()}</td>
-                                <td style="padding: 12px;">${usuario.getUsername()}</td>
-                                <td style="padding: 12px;">${usuario.getEmail() != null ? usuario.getEmail() : 'Sin email'}</td>
+                                <td style="padding: 12px;"><%=usuario.getNombre()%></td>
+                                <td style="padding: 12px;"><%=usuario.getUsername()%></td>
+                                <td style="padding: 12px;"><%=usuario.getEmail() != null ? usuario.getEmail() : "Sin email"%></td>
+                                <td style="padding: 12px;"><%=rolNombre%></td>
                                 <td style="padding: 12px;">
-                                    ${usuario.getRol() != null ? usuario.getRol().getNombre() : 'Sin rol'}
+                                    <% if (esActivo) { %>
+                                        <span style="color: green;">Activo</span>
+                                    <% } else { %>
+                                        <span style="color: red;">Inactivo</span>
+                                    <% } %>
                                 </td>
                                 <td style="padding: 12px;">
-                                    ${usuario.isActivo() ? '<span style="color: green;">Activo</span>' : '<span style="color: red;">Inactivo</span>'}
-                                </td>
-                                <td style="padding: 12px;">
-                                    <a href="usuarios?action=asignarRol&id=${usuario.getId()}&rolId=1" class="btn btn-primary-outline btn-sm" title="Asignar rol ADMIN">Admin</a>
-                                    <a href="usuarios?action=asignarRol&id=${usuario.getId()}&rolId=2" class="btn btn-primary-outline btn-sm" title="Asignar rol USER">User</a>
-                                    <% if (usuario.getId() != session.getAttribute("usuarioId")) { %>
-                                    <a href="usuarios?action=eliminar&id=${usuario.getId()}" class="btn btn-danger btn-sm" title="Eliminar usuario" onclick="return confirm('¿Estás seguro de que deseas eliminar este usuario?');">Eliminar</a>
+                                    <a href="usuarios?action=asignarRol&id=<%=usuario.getId()%>&rolId=1" class="btn btn-primary-outline btn-sm" title="Asignar rol ADMIN">Admin</a>
+                                    <a href="usuarios?action=asignarRol&id=<%=usuario.getId()%>&rolId=2" class="btn btn-primary-outline btn-sm" title="Asignar rol USER">User</a>
+                                    <% if (usuario.getId() != usuarioIdActual) { %>
+                                    <a href="usuarios?action=eliminar&id=<%=usuario.getId()%>" class="btn btn-danger btn-sm" title="Eliminar usuario" onclick="return confirm('¿Estás seguro de que deseas eliminar este usuario?');">Eliminar</a>
                                     <% } %>
                                 </td>
                             </tr>

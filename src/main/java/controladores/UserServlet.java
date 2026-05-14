@@ -2,6 +2,7 @@ package controladores;
 
 import modelo.Usuario;
 import modelo.UserDAOImpl;
+import modelo.DatabaseConnection;
 import modelo.Rol;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -10,10 +11,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.util.List;
 
 /**
- * Servlet para manejar la gestión de usuarios (solo para administradores)
+ * Servlet para manejar la gestión de usuarios (solo para administradores).
+ * URL: /usuarios
  */
 @WebServlet("/usuarios")
 public class UserServlet extends HttpServlet {
@@ -38,10 +42,11 @@ public class UserServlet extends HttpServlet {
         // Verificar que sea administrador
         String rol = (String) session.getAttribute("usuarioRol");
         if (!"ADMIN".equals(rol)) {
-            response.sendRedirect("dashboard.jsp");
+            response.sendRedirect("contactos");
             return;
         }
         
+        Integer usuarioIdActual = (Integer) session.getAttribute("usuarioId");
         String action = request.getParameter("action");
         
         if ("editar".equals(action)) {
@@ -51,7 +56,44 @@ public class UserServlet extends HttpServlet {
                 request.setAttribute("usuario", usuario);
                 request.setAttribute("modoEdicion", true);
             }
+            List<Usuario> usuarios = userDAO.obtenerTodos();
+            request.setAttribute("usuarios", usuarios);
             request.getRequestDispatcher("usuarios.jsp").forward(request, response);
+
+        } else if ("eliminar".equals(action)) {
+            // Eliminar usuario vía GET (enlace de la tabla)
+            String idStr = request.getParameter("id");
+            if (idStr != null) {
+                int id = Integer.parseInt(idStr);
+                // No permitir eliminar el propio usuario
+                if (id != usuarioIdActual) {
+                    Usuario usuario = userDAO.obtenerPorId(id);
+                    if (usuario != null) {
+                        String username = usuario.getUsername();
+                        if (userDAO.eliminar(id)) {
+                            registrarActividad(usuarioIdActual, "ELIMINAR_USUARIO",
+                                    "Eliminó usuario: " + username);
+                        }
+                    }
+                }
+            }
+            response.sendRedirect("usuarios");
+
+        } else if ("asignarRol".equals(action)) {
+            // Asignar rol vía GET (enlace de la tabla)
+            String idStr = request.getParameter("id");
+            String rolIdStr = request.getParameter("rolId");
+            if (idStr != null && rolIdStr != null) {
+                int usuarioId = Integer.parseInt(idStr);
+                int rolId = Integer.parseInt(rolIdStr);
+                if (userDAO.asignarRol(usuarioId, rolId)) {
+                    Usuario usuario = userDAO.obtenerPorId(usuarioId);
+                    registrarActividad(usuarioIdActual, "ASIGNAR_ROL",
+                            "Asignó rol a usuario: " + (usuario != null ? usuario.getUsername() : "ID " + usuarioId));
+                }
+            }
+            response.sendRedirect("usuarios");
+
         } else {
             // Listar todos los usuarios
             List<Usuario> usuarios = userDAO.obtenerTodos();
@@ -73,7 +115,7 @@ public class UserServlet extends HttpServlet {
         // Verificar que sea administrador
         String rol = (String) session.getAttribute("usuarioRol");
         if (!"ADMIN".equals(rol)) {
-            response.sendRedirect("dashboard.jsp");
+            response.sendRedirect("contactos");
             return;
         }
         
@@ -84,10 +126,6 @@ public class UserServlet extends HttpServlet {
             crearUsuario(request, response, usuarioIdActual);
         } else if ("actualizar".equals(action)) {
             actualizarUsuario(request, response, usuarioIdActual);
-        } else if ("eliminar".equals(action)) {
-            eliminarUsuario(request, response, usuarioIdActual);
-        } else if ("asignarRol".equals(action)) {
-            asignarRol(request, response, usuarioIdActual);
         }
     }
     
@@ -103,6 +141,8 @@ public class UserServlet extends HttpServlet {
         // Validar que el username no exista
         if (userDAO.existeUsername(username)) {
             request.setAttribute("error", "El nombre de usuario ya existe");
+            List<Usuario> usuarios = userDAO.obtenerTodos();
+            request.setAttribute("usuarios", usuarios);
             request.getRequestDispatcher("usuarios.jsp").forward(request, response);
             return;
         }
@@ -120,6 +160,8 @@ public class UserServlet extends HttpServlet {
             response.sendRedirect("usuarios");
         } else {
             request.setAttribute("error", "Error al crear el usuario");
+            List<Usuario> usuarios = userDAO.obtenerTodos();
+            request.setAttribute("usuarios", usuarios);
             request.getRequestDispatcher("usuarios.jsp").forward(request, response);
         }
     }
@@ -152,71 +194,22 @@ public class UserServlet extends HttpServlet {
             request.setAttribute("error", "Error al actualizar el usuario");
             request.setAttribute("usuario", usuario);
             request.setAttribute("modoEdicion", true);
+            List<Usuario> usuarios = userDAO.obtenerTodos();
+            request.setAttribute("usuarios", usuarios);
             request.getRequestDispatcher("usuarios.jsp").forward(request, response);
         }
     }
     
-    private void eliminarUsuario(HttpServletRequest request, HttpServletResponse response, int usuarioIdActual) 
-            throws ServletException, IOException {
-        
-        String idStr = request.getParameter("id");
-        if (idStr == null) {
-            response.sendRedirect("usuarios");
-            return;
-        }
-        
-        int id = Integer.parseInt(idStr);
-        
-        // No permitir eliminar el propio usuario
-        if (id == usuarioIdActual) {
-            request.setAttribute("error", "No puedes eliminar tu propio usuario");
-            response.sendRedirect("usuarios");
-            return;
-        }
-        
-        Usuario usuario = userDAO.obtenerPorId(id);
-        if (usuario != null) {
-            String username = usuario.getUsername();
-            if (userDAO.eliminar(id)) {
-                registrarActividad(usuarioIdActual, "ELIMINAR_USUARIO", "Eliminó usuario: " + username);
-            }
-        }
-        
-        response.sendRedirect("usuarios");
-    }
-    
-    private void asignarRol(HttpServletRequest request, HttpServletResponse response, int usuarioIdActual) 
-            throws ServletException, IOException {
-        
-        String idStr = request.getParameter("id");
-        String rolIdStr = request.getParameter("rolId");
-        
-        if (idStr != null && rolIdStr != null) {
-            int usuarioId = Integer.parseInt(idStr);
-            int rolId = Integer.parseInt(rolIdStr);
-            
-            if (userDAO.asignarRol(usuarioId, rolId)) {
-                Usuario usuario = userDAO.obtenerPorId(usuarioId);
-                registrarActividad(usuarioIdActual, "ASIGNAR_ROL", "Asignó rol a usuario: " + usuario.getUsername());
-            }
-        }
-        
-        response.sendRedirect("usuarios");
-    }
-    
     private void registrarActividad(int usuarioId, String accion, String descripcion) {
-        try {
-            java.sql.Connection conn = modelo.DatabaseConnection.getConnection();
-            String sql = "INSERT INTO actividades (usuario_id, accion, descripcion) VALUES (?, ?, ?)";
-            java.sql.PreparedStatement stmt = conn.prepareStatement(sql);
+        String sql = "INSERT INTO actividades (usuario_id, accion, descripcion) VALUES (?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, usuarioId);
             stmt.setString(2, accion);
             stmt.setString(3, descripcion);
             stmt.executeUpdate();
-            stmt.close();
-            conn.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("[UserServlet] Error al registrar actividad: " + e.getMessage());
         }
     }
 }

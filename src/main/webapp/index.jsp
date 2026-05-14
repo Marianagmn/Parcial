@@ -15,9 +15,9 @@
         </div>
         <nav class="main-nav">
             <a href="index.jsp" title="Regresar a la página principal del sitio">Inicio</a>
-            <a href="login.jsp?action=add" title="Dirígete a crear nuevos contactos en el sistema">Añadir Contacto</a>
-            <a href="login.jsp?action=search" title="Encuentra un contacto ya registrado fácilmente">Buscar Contacto</a>
-            <a href="login.jsp?action=groups" title="Organiza tus contactos por familia, amigos o trabajo">Ver Grupos</a>
+            <a href="login.jsp" title="Dirígete a crear nuevos contactos en el sistema">Añadir Contacto</a>
+            <a href="login.jsp" title="Encuentra un contacto ya registrado fácilmente">Buscar Contacto</a>
+            <a href="login.jsp" title="Organiza tus contactos por familia, amigos o trabajo">Ver Grupos</a>
             <a href="login.jsp" title="Inicia sesión o regístrate en la plataforma" class="btn-primary-outline">Acceder</a>
         </nav>
     </header>
