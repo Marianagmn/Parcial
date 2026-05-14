@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS actividades (
 
 -- Insertar datos iniciales de roles
 INSERT INTO roles (nombre, descripcion) VALUES 
+('SUPERADMIN', 'Super Administrador con control total del sistema'),
 ('ADMIN', 'Administrador con acceso completo'),
 ('USER', 'Usuario estándar con acceso limitado');
 
@@ -80,19 +81,27 @@ INSERT INTO permisos (nombre, descripcion) VALUES
 ('USUARIO_ELIMINAR', 'Eliminar usuarios'),
 ('USUARIO_GESTIONAR_ROLES', 'Asignar roles y permisos a usuarios');
 
--- Asignar permisos al rol ADMIN (todos los permisos)
+-- Asignar permisos al rol SUPERADMIN (todos los permisos)
 INSERT INTO roles_permisos (rol_id, permiso_id)
 SELECT 1, id FROM permisos;
 
+-- Asignar permisos al rol ADMIN (todos los permisos)
+INSERT INTO roles_permisos (rol_id, permiso_id)
+SELECT 2, id FROM permisos;
+
 -- Asignar permisos al rol USER (solo permisos de contactos)
 INSERT INTO roles_permisos (rol_id, permiso_id)
-SELECT 2, id FROM permisos WHERE nombre IN ('CONTACTO_VER', 'CONTACTO_CREAR', 'CONTACTO_EDITAR', 'CONTACTO_ELIMINAR');
+SELECT 3, id FROM permisos WHERE nombre IN ('CONTACTO_VER', 'CONTACTO_CREAR', 'CONTACTO_EDITAR', 'CONTACTO_ELIMINAR');
 
--- Insertar usuario administrador por defecto (password: admin123)
+-- Insertar super administrador por defecto (password: super123)
 -- Nota: En producción, usar hash real de contraseña
 INSERT INTO usuarios (nombre, username, password, email, rol_id) VALUES 
-('Administrador', 'admin', 'admin123', 'admin@agenda.com', 1);
+('Super Administrador', 'superadmin', 'super123', 'superadmin@agenda.com', 1);
+
+-- Insertar usuario administrador por defecto (password: admin123)
+INSERT INTO usuarios (nombre, username, password, email, rol_id) VALUES 
+('Administrador', 'admin', 'admin123', 'admin@agenda.com', 2);
 
 -- Insertar usuario de prueba (password: user123)
 INSERT INTO usuarios (nombre, username, password, email, rol_id) VALUES 
-('Usuario Prueba', 'usuario', 'user123', 'usuario@agenda.com', 2);
+('Usuario Prueba', 'usuario', 'user123', 'usuario@agenda.com', 3);

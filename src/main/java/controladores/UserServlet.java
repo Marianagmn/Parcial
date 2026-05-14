@@ -39,9 +39,9 @@ public class UserServlet extends HttpServlet {
             return;
         }
         
-        // Verificar que sea administrador
+        // Verificar que sea administrador o superadmin
         String rol = (String) session.getAttribute("usuarioRol");
-        if (!"ADMIN".equals(rol)) {
+        if (!"ADMIN".equals(rol) && !"SUPERADMIN".equals(rol)) {
             response.sendRedirect("contactos");
             return;
         }
@@ -57,7 +57,9 @@ public class UserServlet extends HttpServlet {
                 request.setAttribute("modoEdicion", true);
             }
             List<Usuario> usuarios = userDAO.obtenerTodos();
+            List<Rol> rolesDisponibles = userDAO.obtenerRoles();
             request.setAttribute("usuarios", usuarios);
+            request.setAttribute("roles", rolesDisponibles);
             request.getRequestDispatcher("usuarios.jsp").forward(request, response);
 
         } else if ("eliminar".equals(action)) {
@@ -80,16 +82,28 @@ public class UserServlet extends HttpServlet {
             response.sendRedirect("usuarios");
 
         } else if ("asignarRol".equals(action)) {
-            // Asignar rol vía GET (enlace de la tabla)
+            // Solo SUPERADMIN puede asignar roles
+            if (!"SUPERADMIN".equals(rol)) {
+                response.sendRedirect("usuarios");
+                return;
+            }
             String idStr = request.getParameter("id");
             String rolIdStr = request.getParameter("rolId");
             if (idStr != null && rolIdStr != null) {
                 int usuarioId = Integer.parseInt(idStr);
                 int rolId = Integer.parseInt(rolIdStr);
-                if (userDAO.asignarRol(usuarioId, rolId)) {
-                    Usuario usuario = userDAO.obtenerPorId(usuarioId);
-                    registrarActividad(usuarioIdActual, "ASIGNAR_ROL",
-                            "Asignó rol a usuario: " + (usuario != null ? usuario.getUsername() : "ID " + usuarioId));
+                // No permitir que el superadmin cambie su propio rol
+                if (usuarioId != usuarioIdActual) {
+                    if (userDAO.asignarRol(usuarioId, rolId)) {
+                        Usuario usuario = userDAO.obtenerPorId(usuarioId);
+                        List<Rol> rolesDisponibles = userDAO.obtenerRoles();
+                        String rolNombre = rolesDisponibles.stream()
+                                .filter(r -> r.getId() == rolId)
+                                .map(Rol::getNombre)
+                                .findFirst().orElse("ID " + rolId);
+                        registrarActividad(usuarioIdActual, "ASIGNAR_ROL",
+                                "Asignó rol " + rolNombre + " a usuario: " + (usuario != null ? usuario.getUsername() : "ID " + usuarioId));
+                    }
                 }
             }
             response.sendRedirect("usuarios");
@@ -97,7 +111,9 @@ public class UserServlet extends HttpServlet {
         } else {
             // Listar todos los usuarios
             List<Usuario> usuarios = userDAO.obtenerTodos();
+            List<Rol> rolesDisponibles = userDAO.obtenerRoles();
             request.setAttribute("usuarios", usuarios);
+            request.setAttribute("roles", rolesDisponibles);
             request.getRequestDispatcher("usuarios.jsp").forward(request, response);
         }
     }
@@ -112,9 +128,9 @@ public class UserServlet extends HttpServlet {
             return;
         }
         
-        // Verificar que sea administrador
+        // Verificar que sea administrador o superadmin
         String rol = (String) session.getAttribute("usuarioRol");
-        if (!"ADMIN".equals(rol)) {
+        if (!"ADMIN".equals(rol) && !"SUPERADMIN".equals(rol)) {
             response.sendRedirect("contactos");
             return;
         }
@@ -142,7 +158,9 @@ public class UserServlet extends HttpServlet {
         if (userDAO.existeUsername(username)) {
             request.setAttribute("error", "El nombre de usuario ya existe");
             List<Usuario> usuarios = userDAO.obtenerTodos();
+            List<Rol> rolesDisponibles = userDAO.obtenerRoles();
             request.setAttribute("usuarios", usuarios);
+            request.setAttribute("roles", rolesDisponibles);
             request.getRequestDispatcher("usuarios.jsp").forward(request, response);
             return;
         }
@@ -161,7 +179,9 @@ public class UserServlet extends HttpServlet {
         } else {
             request.setAttribute("error", "Error al crear el usuario");
             List<Usuario> usuarios = userDAO.obtenerTodos();
+            List<Rol> rolesDisponibles = userDAO.obtenerRoles();
             request.setAttribute("usuarios", usuarios);
+            request.setAttribute("roles", rolesDisponibles);
             request.getRequestDispatcher("usuarios.jsp").forward(request, response);
         }
     }
@@ -195,7 +215,9 @@ public class UserServlet extends HttpServlet {
             request.setAttribute("usuario", usuario);
             request.setAttribute("modoEdicion", true);
             List<Usuario> usuarios = userDAO.obtenerTodos();
+            List<Rol> rolesDisponibles = userDAO.obtenerRoles();
             request.setAttribute("usuarios", usuarios);
+            request.setAttribute("roles", rolesDisponibles);
             request.getRequestDispatcher("usuarios.jsp").forward(request, response);
         }
     }

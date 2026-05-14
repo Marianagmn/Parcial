@@ -1,6 +1,7 @@
 package interfaces;
 
 import modelo.Usuario;
+import modelo.Rol;
 import java.util.List;
 
 /**
@@ -71,4 +72,10 @@ public interface UserDAO {
      * @return true si se asignó exitosamente
      */
     boolean asignarRol(int usuarioId, int rolId);
+    
+    /**
+     * Obtiene todos los roles disponibles
+     * @return Lista de todos los roles
+     */
+    List<Rol> obtenerRoles();
 }

@@ -53,7 +53,7 @@
                 Contacto</a>
             <a href="#search" class="nav-item <%= "buscar".equals(vistaActiva) ? "active" : "" %>" data-target="view-search" title="Buscar contactos por nombre o grupo">🔍
                 Buscar / Filtrar</a>
-            <% if ("ADMIN".equals(usuarioRol)) { %>
+            <% if ("ADMIN".equals(usuarioRol) || "SUPERADMIN".equals(usuarioRol)) { %>
             <a href="usuarios" class="nav-item" data-target="view-users" title="Gestionar usuarios del sistema">👥
                 Gestionar Usuarios</a>
             <% } %>
