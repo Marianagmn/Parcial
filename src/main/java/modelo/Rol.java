@@ -53,6 +53,23 @@ public class Rol {
         this.permisos = permisos;
     }
     
+    /**
+     * Verifica si el rol tiene un permiso específico
+     * @param permisoId ID del permiso a verificar
+     * @return true si el rol tiene el permiso, false en caso contrario
+     */
+    public boolean tienePermiso(int permisoId) {
+        if (permisos == null) {
+            return false;
+        }
+        for (Permiso permiso : permisos) {
+            if (permiso.getId() == permisoId) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     @Override
     public String toString() {
         return "Rol{" +

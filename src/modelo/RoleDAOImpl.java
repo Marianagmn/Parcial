@@ -126,7 +126,7 @@ public class RoleDAOImpl implements RoleDAO {
     
     @Override
     public boolean agregarPermiso(int rolId, int permisoId) {
-        String sql = "INSERT INTO rol_permiso (rol_id, permiso_id) VALUES (?, ?)";
+        String sql = "INSERT INTO roles_permisos (rol_id, permiso_id) VALUES (?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, rolId);
@@ -141,7 +141,7 @@ public class RoleDAOImpl implements RoleDAO {
     
     @Override
     public boolean eliminarPermiso(int rolId, int permisoId) {
-        String sql = "DELETE FROM rol_permiso WHERE rol_id = ? AND permiso_id = ?";
+        String sql = "DELETE FROM roles_permisos WHERE rol_id = ? AND permiso_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, rolId);
@@ -158,7 +158,7 @@ public class RoleDAOImpl implements RoleDAO {
     public List<Permiso> obtenerPermisosPorRol(int rolId) {
         List<Permiso> permisos = new ArrayList<>();
         String sql = "SELECT p.* FROM permisos p " +
-                     "INNER JOIN rol_permiso rp ON p.id = rp.permiso_id " +
+                     "INNER JOIN roles_permisos rp ON p.id = rp.permiso_id " +
                      "WHERE rp.rol_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
